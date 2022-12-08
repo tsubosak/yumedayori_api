@@ -20,23 +20,21 @@ model Album {
 }
 
 model AlbumsToTracks {
-  id      Int   @id @default(autoincrement())
-  albumId Int
-  trackId Int
+  albumId Int   @unique
+  trackId Int   @unique
   album   Album @relation(fields: [albumId], references: [id])
   track   Track @relation(fields: [trackId], references: [id])
 
-  @@unique([albumId, trackId])
+  @@id([albumId, trackId])
 }
 
 model AlbumsToArtists {
-  id       Int    @id @default(autoincrement())
-  albumId  Int
-  artistId Int
+  albumId  Int    @unique
+  artistId Int    @unique
   album    Album  @relation(fields: [albumId], references: [id])
   artist   Artist @relation(fields: [artistId], references: [id])
 
-  @@unique([albumId, artistId])
+  @@id([albumId, artistId])
 }
 
 model Track {
@@ -49,13 +47,12 @@ model Track {
 }
 
 model TracksToArtists {
-  id       Int    @id @default(autoincrement())
-  trackId  Int
-  artistId Int
+  trackId  Int    @unique
+  artistId Int    @unique
   track    Track  @relation(fields: [trackId], references: [id])
   artist   Artist @relation(fields: [artistId], references: [id])
 
-  @@unique([trackId, artistId])
+  @@id([trackId, artistId])
 }
 
 model Artist {
@@ -63,9 +60,8 @@ model Artist {
   name      String            @unique
   createdAt DateTime          @default(now())
   updatedAt DateTime          @updatedAt
-  parent    Artist?           @relation("ArtistToArtist", fields: [parentId], references: [id])
-  parentId  Int?
+  parents   Artist[]          @relation("ArtistParents")
+  children  Artist[]          @relation("ArtistParents")
   tracks    TracksToArtists[]
   albums    AlbumsToArtists[]
-  Artist    Artist[]          @relation("ArtistToArtist")
 }

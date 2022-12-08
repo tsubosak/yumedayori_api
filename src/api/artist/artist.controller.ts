@@ -26,12 +26,12 @@ class FindOneParamsDto extends createZodDto(findOneParams) {}
 
 const createBody = z.object({
   name: z.string(),
-  parentId: z.optional(z.number()),
+  parentIds: z.optional(z.array(z.number())),
 })
 class CreateBodyDto extends createZodDto(createBody) {}
 
 const addParentBody = z.object({
-  parentId: z.number(),
+  parentIds: z.array(z.number()),
 })
 class AddParentBodyDto extends createZodDto(addParentBody) {}
 
@@ -49,7 +49,6 @@ export class ArtistController {
   async findMany(@Query() { q }: FindManyQueryDto): Promise<Artist[]> {
     const artists = await this.prismaService.artist.findMany({
       where: { name: { contains: q } },
-      include: { parent: true },
     })
 
     return artists
@@ -58,7 +57,7 @@ export class ArtistController {
   @Get(":id")
   async findOne(@Param() { id }: FindOneParamsDto): Promise<Artist> {
     const artist = await this.prismaService.artist.findUnique({
-      include: { parent: true },
+      include: { parents: true, children: true, tracks: true, albums: true },
       where: { id },
     })
     if (!artist)
@@ -67,17 +66,24 @@ export class ArtistController {
     return artist
   }
 
-  @Post(":id/parent")
+  @Post(":id/parents")
   async addParent(
     @Param() { id }: FindOneParamsDto,
-    @Body() { parentId }: AddParentBodyDto
+    @Body() { parentIds }: AddParentBodyDto
   ) {
     const artist = await this.prismaService.artist.update({
       where: { id },
-      data: { parent: { connect: { id: parentId } } },
+      data: {
+        parents: {
+          connect: parentIds.map((parentId) => ({
+            id: parentId,
+          })),
+        },
+      },
+      include: { parents: true },
     })
 
-    return { parentId: artist.parentId }
+    return artist.parents
   }
 
   @Post()
@@ -87,13 +93,16 @@ export class ArtistController {
       const artist = await this.prismaService.artist.create({
         data: {
           name: data.name,
-          parent: data.parentId
-            ? { connect: { id: data.parentId } }
-            : undefined,
+          parents: {
+            connect: data.parentIds?.map((parentId) => ({
+              id: parentId,
+            })),
+          },
         },
       })
       return { url: `/artists/${artist.id}`, statusCode: 201 }
     } catch (error) {
+      console.error(error)
       if (error instanceof PrismaClientKnownRequestError) {
         throw new HttpException(error.code, HttpStatus.BAD_REQUEST)
       }
