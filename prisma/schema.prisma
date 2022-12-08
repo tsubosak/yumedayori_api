@@ -13,6 +13,7 @@ datasource db {
 model Album {
   id        Int               @id @default(autoincrement())
   title     String            @unique
+  artwork   String?
   createdAt DateTime          @default(now())
   updatedAt DateTime          @updatedAt
   artists   AlbumsToArtists[]
@@ -58,6 +59,7 @@ model TracksToArtists {
 model Artist {
   id        Int               @id @default(autoincrement())
   name      String            @unique
+  artwork   String?
   createdAt DateTime          @default(now())
   updatedAt DateTime          @updatedAt
   parents   Artist[]          @relation("ArtistParents")

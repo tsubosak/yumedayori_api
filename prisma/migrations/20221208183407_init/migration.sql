@@ -2,6 +2,7 @@
 CREATE TABLE "Album" (
     "id" SERIAL NOT NULL,
     "title" TEXT NOT NULL,
+    "artwork" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -46,6 +47,7 @@ CREATE TABLE "TracksToArtists" (
 CREATE TABLE "Artist" (
     "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
+    "artwork" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 

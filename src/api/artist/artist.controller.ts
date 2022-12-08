@@ -5,6 +5,7 @@ import {
   HttpException,
   HttpStatus,
   Param,
+  Patch,
   Post,
   Query,
   Redirect,
@@ -26,9 +27,16 @@ class FindOneParamsDto extends createZodDto(findOneParams) {}
 
 const createBody = z.object({
   name: z.string(),
+  artwork: z.optional(z.string()),
   parentIds: z.optional(z.array(z.number())),
 })
 class CreateBodyDto extends createZodDto(createBody) {}
+
+const patchBody = z.object({
+  name: z.optional(z.string()),
+  artwork: z.optional(z.string()),
+})
+class PatchBodyDto extends createZodDto(patchBody) {}
 
 const addParentBody = z.object({
   parentIds: z.array(z.number()),
@@ -66,6 +74,22 @@ export class ArtistController {
     return artist
   }
 
+  @Patch(":id")
+  async patchOne(
+    @Param() { id }: FindOneParamsDto,
+    @Body() data: PatchBodyDto
+  ) {
+    const artist = await this.prismaService.artist.update({
+      where: { id },
+      data,
+    })
+    if (!artist) {
+      throw new HttpException("artist not found", HttpStatus.NOT_FOUND)
+    }
+
+    return artist
+  }
+
   @Post(":id/parents")
   async addParent(
     @Param() { id }: FindOneParamsDto,
@@ -93,6 +117,7 @@ export class ArtistController {
       const artist = await this.prismaService.artist.create({
         data: {
           name: data.name,
+          artwork: data.artwork,
           parents: {
             connect: data.parentIds?.map((parentId) => ({
               id: parentId,
