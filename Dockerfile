@@ -19,6 +19,6 @@ ENV NODE_ENV production
 ARG COMMIT_SHA
 ENV COMMIT_SHA=$COMMIT_SHA
 
-EXPOSE 3000
+EXPOSE 7000
 
 CMD [ "yarn", "run", "start" ]

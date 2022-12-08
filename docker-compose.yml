@@ -1,6 +1,24 @@
 version: "3.9"
 
 services:
+  postgres:
+    image: postgres:15
+    healthcheck:
+      test: pg_isready
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - target: 5432
+        published: 5432
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: postgres
+    volumes:
+      - type: volume
+        source: postgres_data
+        target: /var/lib/postgresql/data
   neo4j:
     image: neo4j:5.2
     ports:
@@ -21,5 +39,6 @@ services:
       NEO4J_AUTH: neo4j/password
 
 volumes:
+  postgres_data:
   neo4j_data:
   neo4j_logs:

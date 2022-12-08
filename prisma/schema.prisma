@@ -1,0 +1,71 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Album {
+  id        Int               @id @default(autoincrement())
+  title     String            @unique
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  artists   AlbumsToArtists[]
+  tracks    AlbumsToTracks[]
+}
+
+model AlbumsToTracks {
+  id      Int   @id @default(autoincrement())
+  albumId Int
+  trackId Int
+  album   Album @relation(fields: [albumId], references: [id])
+  track   Track @relation(fields: [trackId], references: [id])
+
+  @@unique([albumId, trackId])
+}
+
+model AlbumsToArtists {
+  id       Int    @id @default(autoincrement())
+  albumId  Int
+  artistId Int
+  album    Album  @relation(fields: [albumId], references: [id])
+  artist   Artist @relation(fields: [artistId], references: [id])
+
+  @@unique([albumId, artistId])
+}
+
+model Track {
+  id        Int               @id @default(autoincrement())
+  title     String            @unique
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  albums    AlbumsToTracks[]
+  artists   TracksToArtists[]
+}
+
+model TracksToArtists {
+  id       Int    @id @default(autoincrement())
+  trackId  Int
+  artistId Int
+  track    Track  @relation(fields: [trackId], references: [id])
+  artist   Artist @relation(fields: [artistId], references: [id])
+
+  @@unique([trackId, artistId])
+}
+
+model Artist {
+  id        Int               @id @default(autoincrement())
+  name      String            @unique
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  parent    Artist?           @relation("ArtistToArtist", fields: [parentId], references: [id])
+  parentId  Int?
+  tracks    TracksToArtists[]
+  albums    AlbumsToArtists[]
+  Artist    Artist[]          @relation("ArtistToArtist")
+}
