@@ -11,59 +11,32 @@ datasource db {
 }
 
 model Album {
-  id        Int               @id @default(autoincrement())
-  title     String            @unique
+  id        Int      @id @default(autoincrement())
+  title     String   @unique
   artwork   String?
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
-  artists   AlbumsToArtists[]
-  tracks    AlbumsToTracks[]
-}
-
-model AlbumsToTracks {
-  albumId Int   @unique
-  trackId Int   @unique
-  album   Album @relation(fields: [albumId], references: [id])
-  track   Track @relation(fields: [trackId], references: [id])
-
-  @@id([albumId, trackId])
-}
-
-model AlbumsToArtists {
-  albumId  Int    @unique
-  artistId Int    @unique
-  album    Album  @relation(fields: [albumId], references: [id])
-  artist   Artist @relation(fields: [artistId], references: [id])
-
-  @@id([albumId, artistId])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  artists   Artist[]
+  tracks    Track[]
 }
 
 model Track {
-  id        Int               @id @default(autoincrement())
-  title     String            @unique
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
-  albums    AlbumsToTracks[]
-  artists   TracksToArtists[]
-}
-
-model TracksToArtists {
-  trackId  Int    @unique
-  artistId Int    @unique
-  track    Track  @relation(fields: [trackId], references: [id])
-  artist   Artist @relation(fields: [artistId], references: [id])
-
-  @@id([trackId, artistId])
+  id        Int      @id @default(autoincrement())
+  title     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  albums    Album[]
+  artists   Artist[]
 }
 
 model Artist {
-  id        Int               @id @default(autoincrement())
-  name      String            @unique
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
   artwork   String?
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
-  parents   Artist[]          @relation("ArtistParents")
-  children  Artist[]          @relation("ArtistParents")
-  tracks    TracksToArtists[]
-  albums    AlbumsToArtists[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  parents   Artist[] @relation("ArtistParents")
+  children  Artist[] @relation("ArtistParents")
+  tracks    Track[]
+  albums    Album[]
 }

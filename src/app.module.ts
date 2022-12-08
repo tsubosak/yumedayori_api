@@ -1,9 +1,9 @@
 import { Module } from "@nestjs/common"
-import { ArtistController } from "./api/artist/artist.controller"
 import { ArtistModule } from "./api/artist/artist.module"
+import { TrackModule } from "./api/track/track.module"
 import { PrismaModule } from "./prisma.module"
 
 @Module({
-  imports: [PrismaModule, ArtistModule],
+  imports: [PrismaModule, ArtistModule, TrackModule],
 })
 export class AppModule {}
