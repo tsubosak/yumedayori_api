@@ -6,6 +6,7 @@ import {
   HttpStatus,
   Param,
   Post,
+  Query,
   Redirect,
   UsePipes,
 } from "@nestjs/common"
@@ -34,14 +35,22 @@ const addParentBody = z.object({
 })
 class AddParentBodyDto extends createZodDto(addParentBody) {}
 
+const findManyQuery = z.object({
+  q: z.optional(z.string().min(1)),
+})
+class FindManyQueryDto extends createZodDto(findManyQuery) {}
+
 @Controller("artists")
 @UsePipes(ZodValidationPipe)
 export class ArtistController {
   constructor(private readonly prismaService: PrismaService) {}
 
   @Get()
-  async findMany(): Promise<Artist[]> {
-    const artists = await this.prismaService.artist.findMany()
+  async findMany(@Query() { q }: FindManyQueryDto): Promise<Artist[]> {
+    const artists = await this.prismaService.artist.findMany({
+      where: { name: { contains: q } },
+      include: { parent: true },
+    })
 
     return artists
   }
