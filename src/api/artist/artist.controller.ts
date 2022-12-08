@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpException,
   HttpStatus,
@@ -42,6 +43,12 @@ const addParentBody = z.object({
   parentIds: z.array(z.number()),
 })
 class AddParentBodyDto extends createZodDto(addParentBody) {}
+
+const removeParentParam = z.object({
+  id: numericString,
+  parentId: numericString,
+})
+class RemoveParentParamDto extends createZodDto(removeParentParam) {}
 
 const findManyQuery = z.object({
   q: z.optional(z.string().min(1)),
@@ -102,6 +109,21 @@ export class ArtistController {
           connect: parentIds.map((parentId) => ({
             id: parentId,
           })),
+        },
+      },
+      include: { parents: true },
+    })
+
+    return artist.parents
+  }
+
+  @Delete(":id/parents/:parentId")
+  async removeParent(@Param() { id, parentId }: RemoveParentParamDto) {
+    const artist = await this.prismaService.artist.update({
+      where: { id },
+      data: {
+        parents: {
+          disconnect: { id: parentId },
         },
       },
       include: { parents: true },
