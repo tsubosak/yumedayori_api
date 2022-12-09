@@ -92,8 +92,7 @@ export class ArtistController {
           include: { parent: true },
         },
         children: { include: { child: true } },
-        tracks: true,
-        albums: true,
+        tracks: { include: { albums: true } },
       },
       where: { id },
     })

@@ -16,7 +16,6 @@ model Album {
   artwork   String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  artists   Artist[]
   tracks    Track[]
 }
 
@@ -49,7 +48,6 @@ model Artist {
   parents   ArtistParentOnArtist[] @relation("ArtistChildren")
   children  ArtistParentOnArtist[] @relation("ArtistParents")
   tracks    Track[]
-  albums    Album[]
   credits   CreditOnTrack[]
 }
 

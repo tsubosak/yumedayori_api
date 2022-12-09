@@ -62,12 +62,6 @@ CREATE TABLE "CreditOnTrack" (
 );
 
 -- CreateTable
-CREATE TABLE "_AlbumToArtist" (
-    "A" INTEGER NOT NULL,
-    "B" INTEGER NOT NULL
-);
-
--- CreateTable
 CREATE TABLE "_AlbumToTrack" (
     "A" INTEGER NOT NULL,
     "B" INTEGER NOT NULL
@@ -87,12 +81,6 @@ CREATE UNIQUE INDEX "Track_title_key" ON "Track"("title");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Artist_name_key" ON "Artist"("name");
-
--- CreateIndex
-CREATE UNIQUE INDEX "_AlbumToArtist_AB_unique" ON "_AlbumToArtist"("A", "B");
-
--- CreateIndex
-CREATE INDEX "_AlbumToArtist_B_index" ON "_AlbumToArtist"("B");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "_AlbumToTrack_AB_unique" ON "_AlbumToTrack"("A", "B");
@@ -117,12 +105,6 @@ ALTER TABLE "CreditOnTrack" ADD CONSTRAINT "CreditOnTrack_artistId_fkey" FOREIGN
 
 -- AddForeignKey
 ALTER TABLE "CreditOnTrack" ADD CONSTRAINT "CreditOnTrack_trackId_fkey" FOREIGN KEY ("trackId") REFERENCES "Track"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "_AlbumToArtist" ADD CONSTRAINT "_AlbumToArtist_A_fkey" FOREIGN KEY ("A") REFERENCES "Album"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "_AlbumToArtist" ADD CONSTRAINT "_AlbumToArtist_B_fkey" FOREIGN KEY ("B") REFERENCES "Artist"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "_AlbumToTrack" ADD CONSTRAINT "_AlbumToTrack_A_fkey" FOREIGN KEY ("A") REFERENCES "Album"("id") ON DELETE CASCADE ON UPDATE CASCADE;

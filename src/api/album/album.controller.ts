@@ -29,7 +29,6 @@ class FindOneParamsDto extends createZodDto(findOneParams) {}
 const createBody = z.object({
   title: z.string(),
   artwork: z.optional(z.string()),
-  artistIds: z.optional(z.array(z.number())),
   trackIds: z.optional(z.array(z.number())),
 })
 class CreateBodyDto extends createZodDto(createBody) {}
@@ -39,17 +38,6 @@ const patchBody = z.object({
   artwork: z.optional(z.string()),
 })
 class PatchBodyDto extends createZodDto(patchBody) {}
-
-const addArtistBody = z.object({
-  artistIds: z.array(z.number()),
-})
-class AddArtistBodyDto extends createZodDto(addArtistBody) {}
-
-const removeArtistParam = z.object({
-  id: numericString,
-  artistId: numericString,
-})
-class RemoveArtistParamDto extends createZodDto(removeArtistParam) {}
 
 const addTrackBody = z.object({
   trackIds: z.array(z.number()),
@@ -84,7 +72,7 @@ export class AlbumController {
   @Get(":id")
   async findOne(@Param() { id }: FindOneParamsDto): Promise<Album> {
     const album = await this.prismaService.album.findUnique({
-      include: { tracks: true, artists: true },
+      include: { tracks: { include: { artists: true } } },
       where: { id },
     })
     if (!album) {
@@ -108,41 +96,6 @@ export class AlbumController {
     }
 
     return track
-  }
-
-  @Post(":id/artists")
-  async addArtist(
-    @Param() { id }: FindOneParamsDto,
-    @Body() { artistIds }: AddArtistBodyDto
-  ) {
-    const track = await this.prismaService.album.update({
-      where: { id },
-      data: {
-        artists: {
-          connect: artistIds.map((id) => ({
-            id,
-          })),
-        },
-      },
-      include: { artists: true },
-    })
-
-    return track.artists
-  }
-
-  @Delete(":id/artists/:artistId")
-  async removeArtist(@Param() { id, artistId }: RemoveArtistParamDto) {
-    const track = await this.prismaService.album.update({
-      where: { id },
-      data: {
-        artists: {
-          disconnect: { id: artistId },
-        },
-      },
-      include: { artists: true },
-    })
-
-    return track.artists
   }
 
   @Post(":id/tracks")
@@ -188,11 +141,6 @@ export class AlbumController {
         data: {
           title: data.title,
           artwork: data.artwork,
-          artists: {
-            connect: data.artistIds?.map((id) => ({
-              id,
-            })),
-          },
           tracks: {
             connect: data.trackIds?.map((id) => ({
               id,
