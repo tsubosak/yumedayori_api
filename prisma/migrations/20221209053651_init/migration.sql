@@ -23,7 +23,6 @@ CREATE TABLE "Track" (
 CREATE TABLE "Artist" (
     "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
-    "artwork" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
