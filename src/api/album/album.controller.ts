@@ -18,6 +18,8 @@ import { z } from "zod"
 import { Album } from "@prisma/client"
 import { RedirectResponse } from "../../types"
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime"
+import { Neo4JService } from "../../neo4j.service"
+import { Integer } from "neo4j-driver"
 
 const numericString = z.string().transform((x) => parseInt(x, 10))
 
@@ -58,7 +60,10 @@ class FindManyQueryDto extends createZodDto(findManyQuery) {}
 @Controller("albums")
 @UsePipes(ZodValidationPipe)
 export class AlbumController {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly neo4jService: Neo4JService
+  ) {}
 
   @Get()
   async findMany(@Query() { q }: FindManyQueryDto): Promise<Album[]> {
@@ -137,8 +142,10 @@ export class AlbumController {
   @Redirect()
   async create(@Body() data: CreateBodyDto): Promise<RedirectResponse> {
     try {
-      const track = await this.prismaService.album.create({
-        data: {
+      const album = await this.prismaService.album.upsert({
+        where: { title: data.title },
+        update: {},
+        create: {
           title: data.title,
           artwork: data.artwork,
           tracks: {
@@ -147,8 +154,35 @@ export class AlbumController {
             })),
           },
         },
+        include: { tracks: true },
       })
-      return { url: `/albums/${track.id}`, statusCode: 201 }
+      const session = this.neo4jService.driver.session()
+      const txc = session.beginTransaction()
+      try {
+        await txc.run(`MERGE (a:Album {id: $id, title: $title})`, {
+          id: new Integer(album.id),
+          title: album.title,
+        })
+        for (const track of album.tracks) {
+          await txc.run(
+            `
+            MATCH (a:Album {id: $id}), (b:Track {id: $trackId})
+            MERGE (b)-[r:TRACK_OF]->(a)
+            `,
+            {
+              id: new Integer(album.id),
+              trackId: new Integer(track.id),
+            }
+          )
+        }
+        await txc.commit()
+      } catch (error) {
+        console.error(error)
+        await txc.rollback()
+      } finally {
+        await session.close()
+      }
+      return { url: `/albums/${album.id}`, statusCode: 201 }
     } catch (error) {
       console.error(error)
       if (error instanceof PrismaClientKnownRequestError) {

@@ -18,6 +18,8 @@ import { z } from "zod"
 import { Track } from "@prisma/client"
 import { RedirectResponse } from "../../types"
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime"
+import { Neo4JService } from "../../neo4j.service"
+import { Integer } from "neo4j-driver"
 
 const numericString = z.string().transform((x) => parseInt(x, 10))
 
@@ -95,7 +97,10 @@ class FindManyQueryDto extends createZodDto(findManyQuery) {}
 @Controller("tracks")
 @UsePipes(ZodValidationPipe)
 export class TrackController {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly neo4jService: Neo4JService
+  ) {}
 
   @Get()
   async findMany(@Query() { q }: FindManyQueryDto): Promise<Track[]> {
@@ -158,6 +163,29 @@ export class TrackController {
       include: { artists: true },
     })
 
+    const session = this.neo4jService.driver.session()
+    const txc = session.beginTransaction()
+    try {
+      for (const artist of track.artists) {
+        await txc.run(
+          `
+            MATCH (a:Track {id: $id}), (b:Artist {id: $artistId})
+            MERGE (a)-[r:BY]->(b)
+            `,
+          {
+            id: new Integer(track.id),
+            artistId: new Integer(artist.id),
+          }
+        )
+      }
+      await txc.commit()
+    } catch (error) {
+      console.error(error)
+      await txc.rollback()
+    } finally {
+      await session.close()
+    }
+
     return track.artists
   }
 
@@ -172,6 +200,25 @@ export class TrackController {
       },
       include: { artists: true },
     })
+
+    const session = this.neo4jService.driver.session()
+    try {
+      await session.run(
+        `
+          MATCH (a:Track {id: $id}), (b:Artist {id: $artistId})
+          MERGE (a)-[r:BY]->(b)
+          DELETE r
+          `,
+        {
+          id: new Integer(id),
+          artistId: new Integer(artistId),
+        }
+      )
+    } catch (error) {
+      console.error(error)
+    } finally {
+      await session.close()
+    }
 
     return track.artists
   }
@@ -194,6 +241,29 @@ export class TrackController {
       include: { credits: { include: { artist: true } } },
     })
 
+    const session = this.neo4jService.driver.session()
+    const txc = session.beginTransaction()
+    try {
+      for (const credit of track.credits) {
+        await txc.run(
+          `
+            MATCH (a:Track {id: $id}), (b:Artist {id: $artistId})
+            MERGE (b)-[r:${credit.creditedAs}]->(a)
+            `,
+          {
+            id: new Integer(track.id),
+            artistId: new Integer(credit.artist.id),
+          }
+        )
+      }
+      await txc.commit()
+    } catch (error) {
+      console.error(error)
+      await txc.rollback()
+    } finally {
+      await session.close()
+    }
+
     return track.credits
   }
 
@@ -201,6 +271,17 @@ export class TrackController {
   async removeCredit(
     @Param() { id, artistId, creditedAs }: RemoveCreditParamDto
   ) {
+    const currentTrack = await this.prismaService.track.findUnique({
+      where: { id },
+      include: { credits: { include: { artist: true } } },
+    })
+    const credit = currentTrack?.credits.find(
+      (parent) =>
+        parent.artistId === artistId && parent.creditedAs === creditedAs
+    )
+    if (!credit) {
+      throw new HttpException("parent not found", HttpStatus.NOT_FOUND)
+    }
     const track = await this.prismaService.track.update({
       where: { id },
       data: {
@@ -216,6 +297,25 @@ export class TrackController {
       },
       include: { credits: { include: { artist: true } } },
     })
+
+    const session = this.neo4jService.driver.session()
+    try {
+      await session.run(
+        `
+          MATCH (a:Track {id: $id}), (b:Artist {id: $artistId})
+          MERGE (b)-[r:${credit.creditedAs}]->(a)
+          DELETE r
+          `,
+        {
+          id: new Integer(id),
+          artistId: new Integer(credit.artistId),
+        }
+      )
+    } catch (error) {
+      console.error(error)
+    } finally {
+      await session.close()
+    }
 
     return track.credits
   }
@@ -237,6 +337,29 @@ export class TrackController {
       include: { albums: true },
     })
 
+    const session = this.neo4jService.driver.session()
+    const txc = session.beginTransaction()
+    try {
+      for (const album of track.albums) {
+        await txc.run(
+          `
+            MATCH (a:Track {id: $id}), (b:Album {id: $albumId})
+            MERGE (a)-[r:TRACK_OF]->(b)
+            `,
+          {
+            id: new Integer(track.id),
+            albumId: new Integer(album.id),
+          }
+        )
+      }
+      await txc.commit()
+    } catch (error) {
+      console.error(error)
+      await txc.rollback()
+    } finally {
+      await session.close()
+    }
+
     return track.albums
   }
 
@@ -252,6 +375,25 @@ export class TrackController {
       include: { albums: true },
     })
 
+    const session = this.neo4jService.driver.session()
+    try {
+      await session.run(
+        `
+          MATCH (a:Track {id: $id}), (b:Album {id: $albumId})
+          MERGE (a)-[r:TRACK_OF]->(b)
+          DELETE r
+          `,
+        {
+          id: new Integer(id),
+          albumId: new Integer(albumId),
+        }
+      )
+    } catch (error) {
+      console.error(error)
+    } finally {
+      await session.close()
+    }
+
     return track.albums
   }
 
@@ -259,8 +401,10 @@ export class TrackController {
   @Redirect()
   async create(@Body() data: CreateBodyDto): Promise<RedirectResponse> {
     try {
-      const track = await this.prismaService.track.create({
-        data: {
+      const track = await this.prismaService.track.upsert({
+        where: { title: data.title },
+        update: {},
+        create: {
           title: data.title,
           artists: {
             connect: data.artistIds?.map((parentId) => ({
@@ -279,7 +423,62 @@ export class TrackController {
             })),
           },
         },
+        include: {
+          artists: true,
+          albums: true,
+          credits: { include: { artist: true } },
+        },
       })
+      const session = this.neo4jService.driver.session()
+      const txc = session.beginTransaction()
+      try {
+        await txc.run(`MERGE (a:Track {id: $id, title: $title})`, {
+          id: new Integer(track.id),
+          title: track.title,
+        })
+        for (const artist of track.artists) {
+          await txc.run(
+            `
+            MATCH (a:Track {id: $id}), (b:Artist {id: $artistId})
+            MERGE (a)-[r:BY]->(b)
+            `,
+            {
+              id: new Integer(track.id),
+              artistId: new Integer(artist.id),
+            }
+          )
+        }
+        for (const album of track.albums) {
+          await txc.run(
+            `
+            MATCH (a:Track {id: $id}), (b:Album {id: $albumId})
+            MERGE (a)-[r:TRACK_OF]->(b)
+            `,
+            {
+              id: new Integer(track.id),
+              albumId: new Integer(album.id),
+            }
+          )
+        }
+        for (const credit of track.credits) {
+          await txc.run(
+            `
+            MATCH (a:Track {id: $id}), (b:Artist {id: $artistId})
+            MERGE (b)-[r:${credit.creditedAs}]->(a)
+            `,
+            {
+              id: new Integer(track.id),
+              artistId: new Integer(credit.artistId),
+            }
+          )
+        }
+        await txc.commit()
+      } catch (error) {
+        console.error(error)
+        await txc.rollback()
+      } finally {
+        await session.close()
+      }
       return { url: `/tracks/${track.id}`, statusCode: 201 }
     } catch (error) {
       console.error(error)
