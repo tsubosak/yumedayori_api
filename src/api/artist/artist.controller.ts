@@ -144,12 +144,44 @@ export class ArtistController {
       },
       include: { parents: { include: { parent: true } } },
     })
+    const session = this.neo4jService.driver.session()
+    const txc = session.beginTransaction()
+    try {
+      for (const parent of artist.parents) {
+        await txc.run(
+          `
+          MATCH (a:Artist {id: $id}), (b:Artist {id: $parentId})
+          MERGE (a)-[r:${parent.parentType}]->(b)
+          `,
+          {
+            id: new Integer(artist.id),
+            parentId: new Integer(parent.parentId),
+          }
+        )
+      }
+      await txc.commit()
+    } catch (error) {
+      console.error(error)
+      await txc.rollback()
+    } finally {
+      await session.close()
+    }
 
     return artist.parents
   }
 
   @Delete(":id/parents/:parentId")
   async removeParent(@Param() { id, parentId }: RemoveParentParamDto) {
+    const currentArtist = await this.prismaService.artist.findUnique({
+      where: { id },
+      include: { parents: { include: { parent: true } } },
+    })
+    const parent = currentArtist?.parents.find(
+      (parent) => parent.parentId === parentId
+    )
+    if (!parent) {
+      throw new HttpException("parent not found", HttpStatus.NOT_FOUND)
+    }
     const artist = await this.prismaService.artist.update({
       where: { id },
       data: {
@@ -159,6 +191,25 @@ export class ArtistController {
       },
       include: { parents: { include: { parent: true } } },
     })
+
+    const session = this.neo4jService.driver.session()
+    try {
+      await session.run(
+        `
+          MATCH (a:Artist {id: $id}), (b:Artist {id: $parentId})
+          MATCH (a)-[r:${parent.parentType}]->(b)
+          DELETE r
+          `,
+        {
+          id: new Integer(artist.id),
+          parentId: new Integer(parent.parentId),
+        }
+      )
+    } catch (error) {
+      console.error(error)
+    } finally {
+      await session.close()
+    }
 
     return artist.parents
   }
