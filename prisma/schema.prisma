@@ -35,17 +35,34 @@ enum ArtistType {
   GROUP
 }
 
+enum ArtistParentType {
+  CONSIST_OF
+  VOICED_BY
+}
+
 model Artist {
-  id        Int             @id @default(autoincrement())
-  name      String          @unique
+  id        Int                    @id @default(autoincrement())
+  name      String                 @unique
   type      ArtistType
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
-  parents   Artist[]        @relation("ArtistParents")
-  children  Artist[]        @relation("ArtistParents")
+  createdAt DateTime               @default(now())
+  updatedAt DateTime               @updatedAt
+  parents   ArtistParentOnArtist[] @relation("ArtistChildren")
+  children  ArtistParentOnArtist[] @relation("ArtistParents")
   tracks    Track[]
   albums    Album[]
   credits   CreditOnTrack[]
+}
+
+model ArtistParentOnArtist {
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  parent    Artist            @relation("ArtistParents", fields: [parentId], references: [id])
+  parentId  Int
+  child     Artist            @relation("ArtistChildren", fields: [childId], references: [id])
+  childId   Int
+  type      ArtistParentType?
+
+  @@id([parentId, childId])
 }
 
 enum Credit {

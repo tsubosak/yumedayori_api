@@ -26,10 +26,19 @@ const findOneParams = z.object({
 })
 class FindOneParamsDto extends createZodDto(findOneParams) {}
 
+const ParentTypeEnum = z.enum(["CONSIST_OF", "VOICED_BY"])
+
 const createBody = z.object({
   name: z.string(),
   type: z.enum(["INDIVIDUAL", "GROUP"]),
-  parentIds: z.optional(z.array(z.number())),
+  parents: z.optional(
+    z.array(
+      z.object({
+        artistId: z.number(),
+        type: z.optional(ParentTypeEnum),
+      })
+    )
+  ),
 })
 class CreateBodyDto extends createZodDto(createBody) {}
 
@@ -39,7 +48,14 @@ const patchBody = z.object({
 class PatchBodyDto extends createZodDto(patchBody) {}
 
 const addParentBody = z.object({
-  parentIds: z.array(z.number()),
+  parents: z.optional(
+    z.array(
+      z.object({
+        artistId: z.number(),
+        type: z.optional(ParentTypeEnum),
+      })
+    )
+  ),
 })
 class AddParentBodyDto extends createZodDto(addParentBody) {}
 
@@ -71,7 +87,14 @@ export class ArtistController {
   @Get(":id")
   async findOne(@Param() { id }: FindOneParamsDto): Promise<Artist> {
     const artist = await this.prismaService.artist.findUnique({
-      include: { parents: true, children: true, tracks: true, albums: true },
+      include: {
+        parents: {
+          include: { parent: true },
+        },
+        children: { include: { child: true } },
+        tracks: true,
+        albums: true,
+      },
       where: { id },
     })
     if (!artist)
@@ -99,18 +122,19 @@ export class ArtistController {
   @Post(":id/parents")
   async addParent(
     @Param() { id }: FindOneParamsDto,
-    @Body() { parentIds }: AddParentBodyDto
+    @Body() { parents }: AddParentBodyDto
   ) {
     const artist = await this.prismaService.artist.update({
       where: { id },
       data: {
         parents: {
-          connect: parentIds.map((parentId) => ({
-            id: parentId,
+          create: parents?.map((parent) => ({
+            parentId: parent.artistId,
+            type: parent.type,
           })),
         },
       },
-      include: { parents: true },
+      include: { parents: { include: { parent: true } } },
     })
 
     return artist.parents
@@ -122,10 +146,10 @@ export class ArtistController {
       where: { id },
       data: {
         parents: {
-          disconnect: { id: parentId },
+          delete: { parentId_childId: { parentId, childId: id } },
         },
       },
-      include: { parents: true },
+      include: { parents: { include: { parent: true } } },
     })
 
     return artist.parents
@@ -140,8 +164,9 @@ export class ArtistController {
           name: data.name,
           type: data.type,
           parents: {
-            connect: data.parentIds?.map((parentId) => ({
-              id: parentId,
+            create: data.parents?.map((parent) => ({
+              parentId: parent.artistId,
+              type: parent.type,
             })),
           },
         },
