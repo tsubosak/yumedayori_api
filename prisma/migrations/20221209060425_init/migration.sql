@@ -1,6 +1,9 @@
 -- CreateEnum
 CREATE TYPE "ArtistType" AS ENUM ('INDIVIDUAL', 'GROUP');
 
+-- CreateEnum
+CREATE TYPE "Credit" AS ENUM ('PRODUCER', 'WRITER', 'COMPOSER', 'ARRANGER', 'PERFORMER', 'MIXER', 'MASTERER', 'ENGINEER', 'LYRICIST', 'OTHER');
+
 -- CreateTable
 CREATE TABLE "Album" (
     "id" SERIAL NOT NULL,
@@ -31,6 +34,17 @@ CREATE TABLE "Artist" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Artist_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "CreditOnTrack" (
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "artistId" INTEGER NOT NULL,
+    "trackId" INTEGER NOT NULL,
+    "creditedAs" "Credit" NOT NULL,
+
+    CONSTRAINT "CreditOnTrack_pkey" PRIMARY KEY ("artistId","trackId","creditedAs")
 );
 
 -- CreateTable
@@ -89,6 +103,12 @@ CREATE UNIQUE INDEX "_ArtistToTrack_AB_unique" ON "_ArtistToTrack"("A", "B");
 
 -- CreateIndex
 CREATE INDEX "_ArtistToTrack_B_index" ON "_ArtistToTrack"("B");
+
+-- AddForeignKey
+ALTER TABLE "CreditOnTrack" ADD CONSTRAINT "CreditOnTrack_artistId_fkey" FOREIGN KEY ("artistId") REFERENCES "Artist"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CreditOnTrack" ADD CONSTRAINT "CreditOnTrack_trackId_fkey" FOREIGN KEY ("trackId") REFERENCES "Track"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "_AlbumToArtist" ADD CONSTRAINT "_AlbumToArtist_A_fkey" FOREIGN KEY ("A") REFERENCES "Album"("id") ON DELETE CASCADE ON UPDATE CASCADE;

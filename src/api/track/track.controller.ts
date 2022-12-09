@@ -26,10 +26,24 @@ const findOneParams = z.object({
 })
 class FindOneParamsDto extends createZodDto(findOneParams) {}
 
+const creditEnums = z.enum([
+  "PRODUCER",
+  "WRITER",
+  "COMPOSER",
+  "ARRANGER",
+  "PERFORMER",
+  "MIXER",
+  "MASTERER",
+  "ENGINEER",
+  "LYRICIST",
+  "OTHER",
+])
+
 const createBody = z.object({
   title: z.string(),
   artistIds: z.optional(z.array(z.number())),
   albumIds: z.optional(z.array(z.number())),
+  credits: z.array(z.object({ artistId: z.number(), creditedAs: creditEnums })),
 })
 class CreateBodyDto extends createZodDto(createBody) {}
 
@@ -49,6 +63,18 @@ const removeArtistParam = z.object({
   artistId: numericString,
 })
 class RemoveArtistParamDto extends createZodDto(removeArtistParam) {}
+
+const addCredittBody = z.object({
+  credits: z.array(z.object({ artistId: z.number(), creditedAs: creditEnums })),
+})
+class AddCreditBodyDto extends createZodDto(addCredittBody) {}
+
+const removeCreditParam = z.object({
+  id: numericString,
+  artistId: numericString,
+  creditedAs: creditEnums,
+})
+class RemoveCreditParamDto extends createZodDto(removeCreditParam) {}
 
 const addAlbumBody = z.object({
   albumIds: z.array(z.number()),
@@ -83,7 +109,13 @@ export class TrackController {
   @Get(":id")
   async findOne(@Param() { id }: FindOneParamsDto): Promise<Track> {
     const track = await this.prismaService.track.findUnique({
-      include: { albums: true, artists: true },
+      include: {
+        albums: true,
+        artists: true,
+        credits: {
+          include: { artist: true },
+        },
+      },
       where: { id },
     })
     if (!track) {
@@ -144,6 +176,50 @@ export class TrackController {
     return track.artists
   }
 
+  @Post(":id/credits")
+  async addCredit(
+    @Param() { id }: FindOneParamsDto,
+    @Body() { credits }: AddCreditBodyDto
+  ) {
+    const track = await this.prismaService.track.update({
+      where: { id },
+      data: {
+        credits: {
+          create: credits.map((credit) => ({
+            artistId: credit.artistId,
+            creditedAs: credit.creditedAs,
+          })),
+        },
+      },
+      include: { credits: { include: { artist: true } } },
+    })
+
+    return track.credits
+  }
+
+  @Delete(":id/credits/:artistId/:creditedAs")
+  async removeCredit(
+    @Param() { id, artistId, creditedAs }: RemoveCreditParamDto
+  ) {
+    const track = await this.prismaService.track.update({
+      where: { id },
+      data: {
+        credits: {
+          delete: {
+            artistId_trackId_creditedAs: {
+              artistId,
+              trackId: id,
+              creditedAs,
+            },
+          },
+        },
+      },
+      include: { credits: { include: { artist: true } } },
+    })
+
+    return track.credits
+  }
+
   @Post(":id/albums")
   async addAlbum(
     @Param() { id }: FindOneParamsDto,
@@ -194,6 +270,12 @@ export class TrackController {
           albums: {
             connect: data.albumIds?.map((parentId) => ({
               id: parentId,
+            })),
+          },
+          credits: {
+            create: data.credits?.map((credit) => ({
+              artist: { connect: { id: credit.artistId } },
+              creditedAs: credit.creditedAs,
             })),
           },
         },

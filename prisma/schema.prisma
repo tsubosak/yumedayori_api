@@ -21,12 +21,13 @@ model Album {
 }
 
 model Track {
-  id        Int      @id @default(autoincrement())
-  title     String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id        Int             @id @default(autoincrement())
+  title     String          @unique
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
   albums    Album[]
   artists   Artist[]
+  credits   CreditOnTrack[]
 }
 
 enum ArtistType {
@@ -35,13 +36,39 @@ enum ArtistType {
 }
 
 model Artist {
-  id        Int        @id @default(autoincrement())
-  name      String     @unique
+  id        Int             @id @default(autoincrement())
+  name      String          @unique
   type      ArtistType
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  parents   Artist[]   @relation("ArtistParents")
-  children  Artist[]   @relation("ArtistParents")
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  parents   Artist[]        @relation("ArtistParents")
+  children  Artist[]        @relation("ArtistParents")
   tracks    Track[]
   albums    Album[]
+  credits   CreditOnTrack[]
+}
+
+enum Credit {
+  PRODUCER
+  WRITER
+  COMPOSER
+  ARRANGER
+  PERFORMER
+  MIXER
+  MASTERER
+  ENGINEER
+  LYRICIST
+  OTHER
+}
+
+model CreditOnTrack {
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  artist     Artist   @relation(fields: [artistId], references: [id])
+  artistId   Int
+  track      Track    @relation(fields: [trackId], references: [id])
+  trackId    Int
+  creditedAs Credit
+
+  @@id([artistId, trackId, creditedAs])
 }
