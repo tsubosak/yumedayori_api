@@ -128,6 +128,38 @@ export class ArtistController {
     return artist
   }
 
+  @Get(":id/recommends")
+  async getRecommends(@Param() { id }: FindOneParamsDto) {
+    const session = this.neo4jService.driver.session()
+    const result = await session.run(
+      `
+    MATCH (a:Artist {id: $id})-[r]->(t:Track)<-[r2]-(b:Artist)
+
+    WITH a, b, count(t) as i
+
+    MATCH (a)-[r]-(c)
+    WITH a, b, i, COLLECT(c) as s1c
+
+    MATCH (b)-[r]-(d) WHERE NOT d IN s1c
+    WITH a, b, i, s1c, COLLECT(d) as s2c
+
+    RETURN b.id AS id, ((i * 1.0) / (SIZE(s1c) + SIZE(s2c))) AS score
+    ORDER BY score DESC, id
+    LIMIT $limit
+    `,
+      {
+        id: new Integer(id),
+        limit: Integer.fromNumber(10),
+      }
+    )
+
+    const artists = await this.prismaService.artist.findMany({
+      where: { id: { in: result.records.map((r) => r.get("id").toNumber()) } },
+    })
+
+    return artists
+  }
+
   @Post(":id/parents")
   async addParent(
     @Param() { id }: FindOneParamsDto,
