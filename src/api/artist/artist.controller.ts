@@ -19,6 +19,8 @@ import { Artist } from "@prisma/client"
 import { RedirectResponse } from "../../types"
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime"
 import { IntersectionDicService } from "../../intersection-dic.service"
+import { Neo4JService } from "../../neo4j.service"
+import { Integer } from "neo4j-driver"
 
 const numericString = z.string().transform((x) => parseInt(x, 10))
 
@@ -78,7 +80,8 @@ class FindManyQueryDto extends createZodDto(findManyQuery) {}
 export class ArtistController {
   constructor(
     private readonly prismaService: PrismaService,
-    private readonly intersectionDicService: IntersectionDicService
+    private readonly intersectionDicService: IntersectionDicService,
+    private readonly neo4jService: Neo4JService
   ) {}
 
   @Get()
@@ -164,8 +167,10 @@ export class ArtistController {
   @Redirect()
   async create(@Body() data: CreateBodyDto): Promise<RedirectResponse> {
     try {
-      const artist = await this.prismaService.artist.create({
-        data: {
+      const artist = await this.prismaService.artist.upsert({
+        where: { name: data.name },
+        update: {},
+        create: {
           name: data.name,
           yomi: data.yomi || this.intersectionDicService.map[data.name],
           type: data.type,
@@ -176,7 +181,41 @@ export class ArtistController {
             })),
           },
         },
+        include: { parents: { include: { parent: true } } },
       })
+      const session = this.neo4jService.driver.session()
+      const txc = session.beginTransaction()
+      try {
+        await txc.run(
+          `
+        MERGE (a:Artist {id: $id, name: $name, yomi: $yomi, type: $type})
+        `,
+          {
+            id: new Integer(artist.id),
+            name: artist.name,
+            yomi: artist.yomi,
+            type: artist.type,
+          }
+        )
+        for (const parent of artist.parents) {
+          await txc.run(
+            `
+          MATCH (a:Artist {id: $id}), (b:Artist {id: $parentId})
+          MERGE (a)-[r:${parent.parentType}]->(b)
+          `,
+            {
+              id: new Integer(artist.id),
+              parentId: new Integer(parent.parentId),
+            }
+          )
+        }
+        await txc.commit()
+      } catch (error) {
+        console.error(error)
+        await txc.rollback()
+      } finally {
+        await session.close()
+      }
       return { url: `/artists/${artist.id}`, statusCode: 201 }
     } catch (error) {
       console.error(error)
