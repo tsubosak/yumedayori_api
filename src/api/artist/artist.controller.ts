@@ -130,7 +130,7 @@ export class ArtistController {
         parents: {
           create: parents?.map((parent) => ({
             parentId: parent.artistId,
-            type: parent.type,
+            parentType: parent.type,
           })),
         },
       },
@@ -166,7 +166,7 @@ export class ArtistController {
           parents: {
             create: data.parents?.map((parent) => ({
               parentId: parent.artistId,
-              type: parent.type,
+              parentType: parent.type,
             })),
           },
         },

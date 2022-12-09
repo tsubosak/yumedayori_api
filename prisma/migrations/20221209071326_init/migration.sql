@@ -45,7 +45,7 @@ CREATE TABLE "ArtistParentOnArtist" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "parentId" INTEGER NOT NULL,
     "childId" INTEGER NOT NULL,
-    "type" "ArtistParentType",
+    "parentType" "ArtistParentType",
 
     CONSTRAINT "ArtistParentOnArtist_pkey" PRIMARY KEY ("parentId","childId")
 );

@@ -54,13 +54,13 @@ model Artist {
 }
 
 model ArtistParentOnArtist {
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
-  parent    Artist            @relation("ArtistParents", fields: [parentId], references: [id])
-  parentId  Int
-  child     Artist            @relation("ArtistChildren", fields: [childId], references: [id])
-  childId   Int
-  type      ArtistParentType?
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  parent     Artist            @relation("ArtistParents", fields: [parentId], references: [id])
+  parentId   Int
+  child      Artist            @relation("ArtistChildren", fields: [childId], references: [id])
+  childId    Int
+  parentType ArtistParentType?
 
   @@id([parentId, childId])
 }
