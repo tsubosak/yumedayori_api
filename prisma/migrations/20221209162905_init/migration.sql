@@ -32,6 +32,7 @@ CREATE TABLE "Track" (
 CREATE TABLE "Artist" (
     "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
+    "yomi" TEXT NOT NULL DEFAULT '',
     "type" "ArtistType" NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,

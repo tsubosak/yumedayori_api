@@ -46,6 +46,7 @@ enum ArtistParentType {
 model Artist {
   id        Int                    @id @default(autoincrement())
   name      String                 @unique
+  yomi      String                 @default("")
   type      ArtistType
   createdAt DateTime               @default(now())
   updatedAt DateTime               @updatedAt

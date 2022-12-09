@@ -18,6 +18,7 @@ import { z } from "zod"
 import { Artist } from "@prisma/client"
 import { RedirectResponse } from "../../types"
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime"
+import { IntersectionDicService } from "../../intersection-dic.service"
 
 const numericString = z.string().transform((x) => parseInt(x, 10))
 
@@ -30,6 +31,7 @@ const ParentTypeEnum = z.enum(["CONSIST_OF", "VOICED_BY"])
 
 const createBody = z.object({
   name: z.string(),
+  yomi: z.optional(z.string()),
   type: z.enum(["INDIVIDUAL", "GROUP"]),
   parents: z.optional(
     z.array(
@@ -44,6 +46,7 @@ class CreateBodyDto extends createZodDto(createBody) {}
 
 const patchBody = z.object({
   name: z.optional(z.string()),
+  yomi: z.optional(z.string()),
 })
 class PatchBodyDto extends createZodDto(patchBody) {}
 
@@ -73,7 +76,10 @@ class FindManyQueryDto extends createZodDto(findManyQuery) {}
 @Controller("artists")
 @UsePipes(ZodValidationPipe)
 export class ArtistController {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly intersectionDicService: IntersectionDicService
+  ) {}
 
   @Get()
   async findMany(@Query() { q }: FindManyQueryDto): Promise<Artist[]> {
@@ -161,6 +167,7 @@ export class ArtistController {
       const artist = await this.prismaService.artist.create({
         data: {
           name: data.name,
+          yomi: data.yomi || this.intersectionDicService.map[data.name],
           type: data.type,
           parents: {
             create: data.parents?.map((parent) => ({
