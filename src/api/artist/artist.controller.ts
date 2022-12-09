@@ -28,6 +28,7 @@ class FindOneParamsDto extends createZodDto(findOneParams) {}
 
 const createBody = z.object({
   name: z.string(),
+  type: z.enum(["INDIVIDUAL", "GROUP"]),
   parentIds: z.optional(z.array(z.number())),
 })
 class CreateBodyDto extends createZodDto(createBody) {}
@@ -137,6 +138,7 @@ export class ArtistController {
       const artist = await this.prismaService.artist.create({
         data: {
           name: data.name,
+          type: data.type,
           parents: {
             connect: data.parentIds?.map((parentId) => ({
               id: parentId,

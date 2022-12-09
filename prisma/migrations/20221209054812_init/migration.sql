@@ -1,3 +1,6 @@
+-- CreateEnum
+CREATE TYPE "ArtistType" AS ENUM ('INDIVIDUAL', 'GROUP');
+
 -- CreateTable
 CREATE TABLE "Album" (
     "id" SERIAL NOT NULL,
@@ -23,6 +26,7 @@ CREATE TABLE "Track" (
 CREATE TABLE "Artist" (
     "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
+    "type" "ArtistType" NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 

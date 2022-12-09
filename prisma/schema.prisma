@@ -29,13 +29,19 @@ model Track {
   artists   Artist[]
 }
 
+enum ArtistType {
+  INDIVIDUAL
+  GROUP
+}
+
 model Artist {
-  id        Int      @id @default(autoincrement())
-  name      String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  parents   Artist[] @relation("ArtistParents")
-  children  Artist[] @relation("ArtistParents")
+  id        Int        @id @default(autoincrement())
+  name      String     @unique
+  type      ArtistType
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  parents   Artist[]   @relation("ArtistParents")
+  children  Artist[]   @relation("ArtistParents")
   tracks    Track[]
   albums    Album[]
 }
