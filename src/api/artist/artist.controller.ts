@@ -87,7 +87,7 @@ export class ArtistController {
   @Get()
   async findMany(@Query() { q }: FindManyQueryDto): Promise<Artist[]> {
     const artists = await this.prismaService.artist.findMany({
-      where: { name: { contains: q } },
+      where: { OR: [{ name: { contains: q } }, { yomi: { contains: q } }] },
     })
 
     return artists
