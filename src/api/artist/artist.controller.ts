@@ -167,9 +167,17 @@ export class ArtistController {
       where: { id },
       data: {
         parents: {
-          create: parents?.map((parent) => ({
-            parentId: parent.artistId,
-            parentType: parent.type,
+          connectOrCreate: parents?.map((parent) => ({
+            where: {
+              parentId_childId: {
+                parentId: parent.artistId,
+                childId: id,
+              },
+            },
+            create: {
+              parentId: parent.artistId,
+              parentType: parent.type,
+            },
           })),
         },
       },
