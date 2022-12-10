@@ -9,14 +9,12 @@ import {
   Patch,
   Post,
   Query,
-  Redirect,
   UsePipes,
 } from "@nestjs/common"
 import { PrismaService } from "../../prisma.service"
 import { createZodDto, ZodValidationPipe } from "@abitia/zod-dto"
 import { z } from "zod"
 import { Artist } from "@prisma/client"
-import { RedirectResponse } from "../../types"
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime"
 import { IntersectionDicService } from "../../intersection-dic.service"
 import { Neo4JService } from "../../neo4j.service"
@@ -248,8 +246,7 @@ export class ArtistController {
   }
 
   @Post()
-  @Redirect()
-  async create(@Body() data: CreateBodyDto): Promise<RedirectResponse> {
+  async create(@Body() data: CreateBodyDto) {
     try {
       const artist = await this.prismaService.artist.upsert({
         where: { name: data.name },
@@ -300,7 +297,7 @@ export class ArtistController {
       } finally {
         await session.close()
       }
-      return { url: `/artists/${artist.id}`, statusCode: 201 }
+      return artist
     } catch (error) {
       console.error(error)
       if (error instanceof PrismaClientKnownRequestError) {

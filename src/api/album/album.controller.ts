@@ -9,14 +9,12 @@ import {
   Patch,
   Post,
   Query,
-  Redirect,
   UsePipes,
 } from "@nestjs/common"
 import { PrismaService } from "../../prisma.service"
 import { createZodDto, ZodValidationPipe } from "@abitia/zod-dto"
 import { z } from "zod"
 import { Album } from "@prisma/client"
-import { RedirectResponse } from "../../types"
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime"
 import { Neo4JService } from "../../neo4j.service"
 import { Integer } from "neo4j-driver"
@@ -139,8 +137,7 @@ export class AlbumController {
   }
 
   @Post()
-  @Redirect()
-  async create(@Body() data: CreateBodyDto): Promise<RedirectResponse> {
+  async create(@Body() data: CreateBodyDto) {
     try {
       const album = await this.prismaService.album.upsert({
         where: { title: data.title },
@@ -182,7 +179,7 @@ export class AlbumController {
       } finally {
         await session.close()
       }
-      return { url: `/albums/${album.id}`, statusCode: 201 }
+      return album
     } catch (error) {
       console.error(error)
       if (error instanceof PrismaClientKnownRequestError) {

@@ -9,14 +9,12 @@ import {
   Patch,
   Post,
   Query,
-  Redirect,
   UsePipes,
 } from "@nestjs/common"
 import { PrismaService } from "../../prisma.service"
 import { createZodDto, ZodValidationPipe } from "@abitia/zod-dto"
 import { z } from "zod"
 import { Track } from "@prisma/client"
-import { RedirectResponse } from "../../types"
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime"
 import { Neo4JService } from "../../neo4j.service"
 import { Integer } from "neo4j-driver"
@@ -398,8 +396,7 @@ export class TrackController {
   }
 
   @Post()
-  @Redirect()
-  async create(@Body() data: CreateBodyDto): Promise<RedirectResponse> {
+  async create(@Body() data: CreateBodyDto) {
     try {
       const track = await this.prismaService.track.upsert({
         where: { title: data.title },
@@ -479,7 +476,7 @@ export class TrackController {
       } finally {
         await session.close()
       }
-      return { url: `/tracks/${track.id}`, statusCode: 201 }
+      return track
     } catch (error) {
       console.error(error)
       if (error instanceof PrismaClientKnownRequestError) {
