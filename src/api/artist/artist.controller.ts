@@ -261,7 +261,10 @@ export class ArtistController {
         update: {},
         create: {
           name: data.name,
-          yomi: data.yomi || this.intersectionDicService.map[data.name],
+          yomi:
+            data.yomi ||
+            this.intersectionDicService.map[data.name] ||
+            this.intersectionDicService.map[data.name.replace(/\s/g, "")],
           type: data.type,
           parents: {
             create: data.parents?.map((parent) => ({
