@@ -401,9 +401,39 @@ export class TrackController {
   @Post()
   async create(@Body() data: CreateBodyDto) {
     try {
+      // TODO: prisma no issue ni subeki
+      const currentTrack = await this.prismaService.track.findUnique({
+        where: { title: data.title },
+      })
       const track = await this.prismaService.track.upsert({
         where: { title: data.title },
-        update: {},
+        update: {
+          artists: {
+            connect: data.artistIds?.map((parentId) => ({
+              id: parentId,
+            })),
+          },
+          albums: {
+            connect: data.albumIds?.map((parentId) => ({
+              id: parentId,
+            })),
+          },
+          credits: {
+            connectOrCreate: data.credits?.map((credit) => ({
+              where: {
+                artistId_trackId_creditedAs: {
+                  artistId: credit.artistId,
+                  trackId: currentTrack?.id || -1,
+                  creditedAs: credit.creditedAs,
+                },
+              },
+              create: {
+                artist: { connect: { id: credit.artistId } },
+                creditedAs: credit.creditedAs,
+              },
+            })),
+          },
+        },
         create: {
           title: data.title,
           artists: {
