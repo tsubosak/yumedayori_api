@@ -104,7 +104,7 @@ export class TrackController {
   @Get()
   async findMany(@Query() { q, p }: FindManyQueryDto): Promise<Track[]> {
     const tracks = await this.prismaService.track.findMany({
-      where: q ? { title: { contains: q } } : {},
+      where: q ? { title: { contains: q, mode: "insensitive" } } : {},
       take: 100,
       skip: (p ?? 0) * 100,
     })

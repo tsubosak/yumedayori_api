@@ -67,7 +67,7 @@ export class AlbumController {
   @Get()
   async findMany(@Query() { q, p }: FindManyQueryDto): Promise<Album[]> {
     const albums = await this.prismaService.album.findMany({
-      where: q ? { title: { contains: q } } : {},
+      where: q ? { title: { contains: q, mode: "insensitive" } } : {},
       take: 100,
       skip: (p ?? 0) * 100,
     })
