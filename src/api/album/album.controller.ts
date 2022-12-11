@@ -52,6 +52,7 @@ class RemoveTrackParamDto extends createZodDto(removeTrackParam) {}
 
 const findManyQuery = z.object({
   q: z.optional(z.string().min(1)),
+  p: z.optional(z.number().min(1)),
 })
 class FindManyQueryDto extends createZodDto(findManyQuery) {}
 
@@ -64,9 +65,11 @@ export class AlbumController {
   ) {}
 
   @Get()
-  async findMany(@Query() { q }: FindManyQueryDto): Promise<Album[]> {
+  async findMany(@Query() { q, p }: FindManyQueryDto): Promise<Album[]> {
     const albums = await this.prismaService.album.findMany({
-      where: { title: { contains: q } },
+      where: q ? { title: { contains: q } } : {},
+      take: 100,
+      skip: (p ?? 0) * 100,
     })
 
     return albums

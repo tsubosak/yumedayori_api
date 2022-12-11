@@ -70,6 +70,7 @@ class RemoveParentParamDto extends createZodDto(removeParentParam) {}
 
 const findManyQuery = z.object({
   q: z.optional(z.string().min(1)),
+  p: z.optional(z.number().min(1)),
 })
 class FindManyQueryDto extends createZodDto(findManyQuery) {}
 
@@ -83,9 +84,13 @@ export class ArtistController {
   ) {}
 
   @Get()
-  async findMany(@Query() { q }: FindManyQueryDto): Promise<Artist[]> {
+  async findMany(@Query() { q, p }: FindManyQueryDto): Promise<Artist[]> {
     const artists = await this.prismaService.artist.findMany({
-      where: { OR: [{ name: { contains: q } }, { yomi: { contains: q } }] },
+      where: q
+        ? { OR: [{ name: { contains: q } }, { yomi: { contains: q } }] }
+        : {},
+      take: 100,
+      skip: (p ?? 0) * 100,
     })
 
     return artists
