@@ -70,7 +70,7 @@ class RemoveParentParamDto extends createZodDto(removeParentParam) {}
 
 const findManyQuery = z.object({
   q: z.optional(z.string().min(1)),
-  p: z.optional(z.number().min(1)),
+  p: z.optional(numericString),
 })
 class FindManyQueryDto extends createZodDto(findManyQuery) {}
 
