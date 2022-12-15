@@ -18,7 +18,7 @@ import { Artist } from "@prisma/client"
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime"
 import { IntersectionDicService } from "../../intersection-dic.service"
 import { Neo4JService } from "../../neo4j.service"
-import { Integer } from "neo4j-driver"
+import { Integer, Node, Relationship } from "neo4j-driver"
 
 const numericString = z.string().transform((x) => parseInt(x, 10))
 
@@ -120,6 +120,51 @@ export class ArtistController {
     return artist
   }
 
+  @Get(":id/relationships")
+  async relationships(@Param() { id }: FindOneParamsDto) {
+    const session = this.neo4jService.driver.session()
+    try {
+      const result = await session.run(
+        `
+MATCH (n: Artist{id: $id})
+OPTIONAL MATCH (ni)-[r1]->(n)
+OPTIONAL MATCH (no)<-[r2]-(n)
+OPTIONAL MATCH (ni)-[r3]->(nio)
+OPTIONAL MATCH (nii)<-[r4]-(nii)
+OPTIONAL MATCH (no)<-[r5]-(noi)
+OPTIONAL MATCH (noo)-[r6]->(no)
+RETURN n, ni, no, nio, nii, noi, noo, r1, r2, r3, r4, r5, r6
+    `,
+        {
+          id: new Integer(id),
+        }
+      )
+      const all = result.records
+        .map((record) => {
+          return Array.from(record.values()).filter((n) => !!n)
+        })
+        .flat()
+      const nodes = all
+        .filter((n): n is Node => n instanceof Node)
+        .map((node) => ({
+          groupId: node.labels[0],
+          id: node.elementId,
+          label: node.properties.name || node.properties.title,
+        }))
+      const edges = all
+        .filter((n): n is Relationship => n instanceof Relationship)
+        .map((edge) => ({
+          source: edge.startNodeElementId,
+          target: edge.endNodeElementId,
+          label: edge.type,
+        }))
+
+      return { nodes, edges }
+    } finally {
+      session.close()
+    }
+  }
+
   @Patch(":id")
   async patchOne(
     @Param() { id }: FindOneParamsDto,
@@ -139,8 +184,9 @@ export class ArtistController {
   @Get(":id/recommends")
   async getRecommends(@Param() { id }: FindOneParamsDto) {
     const session = this.neo4jService.driver.session()
-    const result = await session.run(
-      `
+    try {
+      const result = await session.run(
+        `
     MATCH (a:Artist {id: $id})-[r]->(t:Track)<-[r2]-(b:Artist)
 
     WITH a, b, count(t) as i
@@ -155,17 +201,20 @@ export class ArtistController {
     ORDER BY score DESC, id
     LIMIT $limit
     `,
-      {
-        id: new Integer(id),
-        limit: Integer.fromNumber(10),
-      }
-    )
-
-    const artists = await this.prismaService.artist.findMany({
-      where: { id: { in: result.records.map((r) => r.get("id").toNumber()) } },
-    })
-
-    return artists
+        {
+          id: new Integer(id),
+          limit: Integer.fromNumber(10),
+        }
+      )
+      const artists = await this.prismaService.artist.findMany({
+        where: {
+          id: { in: result.records.map((r) => r.get("id").toNumber()) },
+        },
+      })
+      return artists
+    } finally {
+      session.close()
+    }
   }
 
   @Post(":id/parents")
