@@ -18,6 +18,7 @@ import { Track } from "@prisma/client"
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime"
 import { Neo4JService } from "../../neo4j.service"
 import { Integer, Node, Relationship } from "neo4j-driver"
+import { TrimedEdge, TrimedNode } from "../../types"
 
 const numericString = z.string().transform((x) => parseInt(x, 10))
 
@@ -171,21 +172,35 @@ RETURN n, ni, no, nio, nii, noi, noo, r1, r2, r3, r4, r5, r6
           return Array.from(record.values()).filter((n) => !!n)
         })
         .flat()
-      const nodes = all
-        .filter((n): n is Node => n instanceof Node)
-        .map((node) => ({
-          groupId: node.labels[0],
-          id: node.elementId,
-          label: node.properties.name || node.properties.title,
-        }))
-      const edges = all
-        .filter((n): n is Relationship => n instanceof Relationship)
-        .map((edge) => ({
-          source: edge.startNodeElementId,
-          target: edge.endNodeElementId,
-          label: edge.type,
-        }))
+      const nodes = Array.from(
+        all
+          .filter((n): n is Node => n instanceof Node)
+          .map((node) => ({
+            groupId: node.labels[0],
+            id: node.elementId,
+            label: node.properties.name || node.properties.title,
+          }))
+          .reduce((map, node) => {
+            map.set(node.id, node)
+            return map
+          }, new Map<string, TrimedNode>())
+          .values()
+      )
 
+      const edges = Array.from(
+        all
+          .filter((n): n is Relationship => n instanceof Relationship)
+          .map((edge) => ({
+            source: edge.startNodeElementId,
+            target: edge.endNodeElementId,
+            label: edge.type,
+          }))
+          .reduce((map, edge) => {
+            map.set(edge.source + edge.target, edge)
+            return map
+          }, new Map<string, TrimedEdge>())
+          .values()
+      )
       return { nodes, edges }
     } finally {
       session.close()
