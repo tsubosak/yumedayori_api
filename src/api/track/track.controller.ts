@@ -161,46 +161,33 @@ OPTIONAL MATCH (ni)-[r3]->(nio)
 OPTIONAL MATCH (nii)<-[r4]-(nii)
 OPTIONAL MATCH (no)<-[r5]-(noi)
 OPTIONAL MATCH (noo)-[r6]->(no)
-RETURN n, ni, no, nio, nii, noi, noo, r1, r2, r3, r4, r5, r6
+WITH collect(n)+collect(ni)+collect(no)+collect(nio)+collect(nii)+collect(noi)+collect(noo) as nodez,
+ collect(r1)+collect(r2)+collect(r3)+collect(r4)+collect(r5)+collect(r6) as edgez
+RETURN
+  REDUCE(s = [], n in nodez |
+    CASE WHEN NOT n IN s THEN s + n ELSE s END) as nodez,
+  REDUCE(s = [], n in edgez |
+    CASE WHEN NOT n IN s THEN s + n ELSE s END) as edgez
     `,
         {
           id: new Integer(id),
         }
       )
-      const all = result.records
-        .map((record) => {
-          return Array.from(record.values()).filter((n) => !!n)
-        })
-        .flat()
-      const nodes = Array.from(
-        all
-          .filter((n): n is Node => n instanceof Node)
-          .map((node) => ({
-            groupId: node.labels[0],
-            id: node.elementId,
-            label: node.properties.name || node.properties.title,
-          }))
-          .reduce((map, node) => {
-            map.set(node.id, node)
-            return map
-          }, new Map<string, TrimedNode>())
-          .values()
-      )
+      const nodes = (result.records[0].get("nodez") as Node[])
+        .filter((n): n is Node => n instanceof Node)
+        .map((node) => ({
+          groupId: node.labels[0],
+          id: node.elementId,
+          label: node.properties.name || node.properties.title,
+        }))
 
-      const edges = Array.from(
-        all
-          .filter((n): n is Relationship => n instanceof Relationship)
-          .map((edge) => ({
-            source: edge.startNodeElementId,
-            target: edge.endNodeElementId,
-            label: edge.type,
-          }))
-          .reduce((map, edge) => {
-            map.set(edge.source + edge.target, edge)
-            return map
-          }, new Map<string, TrimedEdge>())
-          .values()
-      )
+      const edges = (result.records[0].get("edgez") as Relationship[])
+        .filter((n): n is Relationship => n instanceof Relationship)
+        .map((edge) => ({
+          source: edge.startNodeElementId,
+          target: edge.endNodeElementId,
+          label: edge.type,
+        }))
       return { nodes, edges }
     } finally {
       session.close()
