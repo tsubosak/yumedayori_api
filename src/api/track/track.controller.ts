@@ -171,7 +171,8 @@ RETURN
     `,
         {
           id: new Integer(id),
-        }
+        },
+        { timeout: 6000 }
       )
       const nodes = (result.records[0].get("nodez") as Node[])
         .filter((n): n is Node => n instanceof Node)
