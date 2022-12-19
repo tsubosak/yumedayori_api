@@ -19,7 +19,6 @@ import { PrismaClientKnownRequestError } from "@prisma/client/runtime"
 import { IntersectionDicService } from "../../intersection-dic.service"
 import { Neo4JService } from "../../neo4j.service"
 import { Integer, Node, Relationship } from "neo4j-driver"
-import { TrimedEdge, TrimedNode } from "../../types"
 
 const numericString = z.string().transform((x) => parseInt(x, 10))
 
