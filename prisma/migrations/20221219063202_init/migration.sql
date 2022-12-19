@@ -1,3 +1,6 @@
+-- CreateExtension
+CREATE EXTENSION IF NOT EXISTS "citext";
+
 -- CreateEnum
 CREATE TYPE "ArtistType" AS ENUM ('INDIVIDUAL', 'GROUP');
 
@@ -10,7 +13,7 @@ CREATE TYPE "Credit" AS ENUM ('PRODUCER', 'WRITER', 'COMPOSER', 'ARRANGER', 'PER
 -- CreateTable
 CREATE TABLE "Album" (
     "id" SERIAL NOT NULL,
-    "title" TEXT NOT NULL,
+    "title" CITEXT NOT NULL,
     "artwork" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -21,7 +24,7 @@ CREATE TABLE "Album" (
 -- CreateTable
 CREATE TABLE "Track" (
     "id" SERIAL NOT NULL,
-    "title" TEXT NOT NULL,
+    "title" CITEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -31,7 +34,7 @@ CREATE TABLE "Track" (
 -- CreateTable
 CREATE TABLE "Artist" (
     "id" SERIAL NOT NULL,
-    "name" TEXT NOT NULL,
+    "name" CITEXT NOT NULL,
     "yomi" TEXT NOT NULL DEFAULT '',
     "type" "ArtistType" NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
