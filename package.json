@@ -1,0 +1,41 @@
+{
+  "name": "yumedayori-api",
+  "version": "2.0.0",
+  "main": "dist/main.js",
+  "license": "MIT",
+  "private": true,
+  "devDependencies": {
+    "@mermaid-js/mermaid-cli": "^9.2.2",
+    "@nestjs/cli": "^9.1.5",
+    "@nestjs/platform-express": "^9.2.1",
+    "@types/express": "^4.17.14",
+    "@types/node": "^18.11.11",
+    "prettier": "^2.8.1",
+    "prisma-erd-generator": "^1.2.4",
+    "ts-node": "^10.9.1",
+    "typescript": "^4.9.4"
+  },
+  "scripts": {
+    "start": "node dist/main",
+    "build": "nest build",
+    "dev": "nest start --watch"
+  },
+  "dependencies": {
+    "@abitia/zod-dto": "^0.4.0",
+    "@nestjs/common": "^9.2.1",
+    "@nestjs/core": "^9.2.1",
+    "@nestjs/swagger": "^6.1.4",
+    "@prisma/client": "4.7.1",
+    "axios": "^1.2.1",
+    "cross-fetch": "^3.1.5",
+    "domino": "^2.1.6",
+    "express": "^4.18.2",
+    "neo4j-driver": "^5.3.0",
+    "openapi3-ts": "^3.1.2",
+    "pg": "^8.8.0",
+    "prisma": "^4.7.1",
+    "reflect-metadata": "^0.1.13",
+    "rxjs": "^7.6.0",
+    "zod": "^3.19.1"
+  }
+}
